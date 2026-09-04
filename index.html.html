@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Central Tech · Estoque &amp; Vendas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#0A0E14; --bg-1:#10151F; --bg-2:#161C29; --bg-3:#1E2635;
+  --line:#2A3346; --line-soft:#212a3a;
+  --ink-0:#F3F5F9; --ink-1:#B7C0D1; --ink-2:#7C8AA3; --ink-3:#4E5A72;
+  --orange:#FF7A00; --orange-2:#FF9640; --orange-soft:rgba(255,122,0,.14);
+  --teal:#00D6C4; --teal-soft:rgba(0,214,196,.14);
+  --good:#22C55E; --good-soft:rgba(34,197,94,.14);
+  --warn:#F5B92E; --warn-soft:rgba(245,185,46,.14);
+  --bad:#F5484B; --bad-soft:rgba(245,72,75,.14);
+  --radius-lg:18px; --radius-md:13px; --radius-sm:9px;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:
+    radial-gradient(1100px 600px at 10% -10%, rgba(255,122,0,.09), transparent 60%),
+    radial-gradient(900px 520px at 100% 0%, rgba(0,214,196,.07), transparent 55%),
+    var(--bg-0);
+  color:var(--ink-0);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  padding-bottom:60px;
+}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif; letter-spacing:-.01em; margin:0;}
+.mono{font-family:'JetBrains Mono',monospace;}
+::selection{background:var(--orange); color:#0A0E14;}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
+button:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:6px;}
+
+.shell{max-width:1120px; margin:0 auto; padding:0 20px;}
+
+.topbar{position:sticky; top:0; z-index:40; backdrop-filter:blur(14px) saturate(140%); background:rgba(10,14,20,.78); border-bottom:1px solid var(--line-soft);}
+.topbar-inner{max-width:1120px; margin:0 auto; padding:13px 20px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+.brand{display:flex; align-items:center; gap:11px;}
+.brand-mark{width:36px; height:36px; border-radius:10px; background:linear-gradient(155deg, var(--orange), #C24E00); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk'; font-weight:700; font-size:14px; color:#fff; flex-shrink:0;}
+.brand-text b{font-size:14px; font-weight:700; display:block;}
+.brand-text span{font-size:11.5px; color:var(--ink-2); display:flex; align-items:center; gap:6px;}
+.sync-dot{width:6px; height:6px; border-radius:50%; background:var(--good); flex-shrink:0; transition:background .2s;}
+.sync-dot.syncing{background:var(--warn); animation:pulse 1s infinite;}
+.sync-dot.err{background:var(--bad);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.topbar-actions{display:flex; gap:8px; align-items:center;}
+.btn{
+  font-family:'Inter'; font-size:12.5px; font-weight:600; cursor:pointer;
+  border-radius:999px; padding:8px 14px; border:1px solid var(--line); background:var(--bg-2); color:var(--ink-1);
+  transition:all .2s var(--ease); white-space:nowrap;
+}
+.btn:hover{border-color:var(--ink-3); color:var(--ink-0);}
+.btn.primary{background:linear-gradient(155deg, var(--orange), #C24E00); border-color:transparent; color:#fff;}
+.btn.primary:hover{filter:brightness(1.08);}
+.btn.teal{background:linear-gradient(155deg, var(--teal), #049689); border-color:transparent; color:#03211d;}
+.btn.teal:hover{filter:brightness(1.08);}
+.btn.ghost{background:transparent;}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+.btn.sm{padding:6px 11px; font-size:11.5px;}
+
+.hero{padding:34px 0 22px;}
+.eyebrow{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--orange-2); background:var(--orange-soft); border:1px solid rgba(255,122,0,.35); padding:5px 12px 5px 10px; border-radius:999px; margin-bottom:16px;}
+.hero h1{font-size:clamp(22px,4vw,30px); font-weight:700; line-height:1.15; margin-bottom:10px; max-width:680px;}
+.hero p{max-width:640px; color:var(--ink-1); font-size:14px; line-height:1.6; margin:0 0 22px;}
+
+.stat-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:12px;}
+.stat-card{background:linear-gradient(180deg, var(--bg-2), var(--bg-1)); border:1px solid var(--line); border-radius:var(--radius-md); padding:16px 16px 14px; position:relative; overflow:hidden;}
+.stat-card::before{content:""; position:absolute; inset:0 0 auto 0; height:2px; background:var(--stat-accent, var(--orange));}
+.stat-num{font-family:'Space Grotesk'; font-size:22px; font-weight:700; line-height:1; margin-bottom:6px; font-variant-numeric:tabular-nums;}
+.stat-label{font-size:11.5px; color:var(--ink-2); font-weight:500;}
+.stat-card.st-total{--stat-accent:var(--teal);}
+.stat-card.st-units{--stat-accent:var(--orange);}
+.stat-card.st-rev{--stat-accent:var(--teal);} .stat-card.st-rev .stat-num{color:var(--teal);}
+.stat-card.st-profit{--stat-accent:var(--good);} .stat-card.st-profit .stat-num{color:var(--good);}
+.stat-card.st-out{--stat-accent:var(--bad);} .stat-card.st-out .stat-num{color:var(--bad);}
+@media (max-width:900px){ .stat-grid{grid-template-columns:repeat(3,1fr);} }
+@media (max-width:560px){ .stat-grid{grid-template-columns:repeat(2,1fr);} }
+
+.controls{display:flex; gap:10px; margin:22px 0 6px; flex-wrap:wrap; align-items:center;}
+.search-wrap{position:relative; flex:1; min-width:200px;}
+.search-wrap input{
+  width:100%; background:var(--bg-2); border:1px solid var(--line); border-radius:999px; color:var(--ink-0);
+  font-size:13.5px; padding:10px 16px 10px 36px; font-family:'Inter';
+}
+.search-wrap input::placeholder{color:var(--ink-3);}
+.search-wrap svg{position:absolute; left:13px; top:50%; transform:translateY(-50%); opacity:.5;}
+.filter-chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--ink-1); background:var(--bg-2); border:1px solid var(--line); padding:8px 14px; border-radius:999px; cursor:pointer; transition:all .2s var(--ease);}
+.filter-chip.active{border-color:var(--teal); background:var(--teal-soft); color:var(--ink-0);}
+.filter-chip:hover{border-color:var(--ink-3);}
+.select-wrap{position:relative; flex:0 0 auto;}
+.select-wrap select{
+  appearance:none; -webkit-appearance:none; background:var(--bg-2); border:1px solid var(--line); border-radius:999px;
+  color:var(--ink-0); font-family:'Inter'; font-size:12.5px; font-weight:600; padding:9px 32px 9px 14px; cursor:pointer;
+}
+.select-wrap select:hover{border-color:var(--ink-3);}
+.select-wrap svg{position:absolute; right:11px; top:50%; transform:translateY(-50%); pointer-events:none; opacity:.55;}
+
+.section{padding:26px 0 6px; scroll-margin-top:80px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:14px; flex-wrap:wrap;}
+.section-head h2{font-size:17px;}
+.section-count{font-size:12px; color:var(--ink-2); font-family:'JetBrains Mono';}
+
+.item-grid{display:grid; grid-template-columns:1fr; gap:8px;}
+.item-row{
+  display:flex; align-items:center; gap:10px; background:var(--bg-1); border:1px solid var(--line-soft);
+  border-radius:var(--radius-sm); padding:11px 14px; transition:border-color .2s var(--ease), background .2s var(--ease);
+  flex-wrap:wrap;
+}
+.item-row.stock-out{border-color:rgba(245,72,75,.4); background:rgba(245,72,75,.05);}
+.item-row.stock-low{border-color:rgba(245,185,46,.4); background:rgba(245,185,46,.05);}
+.item-name{flex:1 1 160px; min-width:140px; font-size:13.5px; color:var(--ink-0); font-weight:500;}
+.field{display:flex; flex-direction:column; gap:3px; flex-shrink:0;}
+.field label{font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); font-weight:600;}
+.num-input{
+  width:74px; background:var(--bg-2); border:1px solid var(--line); border-radius:7px; color:var(--ink-0);
+  font-size:12.5px; font-family:'JetBrains Mono'; padding:6px 6px; text-align:center;
+}
+.num-input.stock{width:56px;}
+.sold-display{display:inline-flex; align-items:center; justify-content:center; color:var(--ink-2); background:var(--bg-3); cursor:default;}
+.margin-badge{font-size:10.5px; font-family:'JetBrains Mono'; color:var(--ink-2); background:var(--bg-3); padding:4px 8px; border-radius:6px; flex-shrink:0; align-self:flex-end;}
+.margin-badge.pos{color:var(--good);}
+.margin-badge.neg{color:var(--bad);}
+.stock-tag{font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:999px; flex-shrink:0; text-transform:uppercase; letter-spacing:.02em; align-self:flex-end;}
+.stock-tag.out{background:var(--bad-soft); color:var(--bad);}
+.stock-tag.low{background:var(--warn-soft); color:var(--warn);}
+.stock-tag.ok{background:var(--good-soft); color:var(--good);}
+.sell-wrap{display:flex; align-items:flex-end; gap:6px; flex-shrink:0;}
+.sell-btn{
+  font-family:'Inter'; font-size:12px; font-weight:700; cursor:pointer; border:none; color:#fff;
+  background:linear-gradient(155deg, var(--orange), #C24E00); border-radius:8px; padding:8px 13px; transition:all .15s var(--ease);
+}
+.sell-btn:hover{filter:brightness(1.1);}
+.sell-btn:disabled{background:var(--bg-3); color:var(--ink-3); cursor:not-allowed;}
+.del-btn{background:transparent; border:1px solid var(--line); color:var(--ink-3); width:28px; height:28px; border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; align-self:flex-end; transition:all .15s var(--ease);}
+.del-btn:hover{border-color:var(--bad); color:var(--bad);}
+
+@media (max-width:640px){
+  .item-name{width:100%; order:0;}
+}
+
+.modal-overlay{position:fixed; inset:0; background:rgba(5,7,11,.7); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg-1); border:1px solid var(--line); border-radius:var(--radius-lg); padding:24px; max-width:560px; width:100%; max-height:85vh; overflow-y:auto;}
+.modal h3{font-size:16px; margin-bottom:14px;}
+.modal pre{white-space:pre-wrap; font-family:'JetBrains Mono'; font-size:12px; color:var(--ink-1); background:var(--bg-2); border:1px solid var(--line-soft); border-radius:10px; padding:14px; line-height:1.6; max-height:40vh; overflow-y:auto;}
+.modal-actions{display:flex; gap:10px; margin-top:16px; justify-content:flex-end; flex-wrap:wrap;}
+.modal-row{display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+.modal-field{display:flex; flex-direction:column; gap:5px; flex:1; min-width:120px;}
+.modal-field label{font-size:11px; color:var(--ink-2); font-weight:600;}
+.modal-field input, .modal-field select{
+  background:var(--bg-2); border:1px solid var(--line); border-radius:8px; color:var(--ink-0);
+  font-size:13px; padding:9px 11px; font-family:'Inter';
+}
+.day-totals{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px;}
+.day-totals div{background:var(--bg-2); border:1px solid var(--line-soft); border-radius:8px; padding:10px; text-align:center;}
+.day-totals .num{font-family:'Space Grotesk'; font-size:15px; font-weight:700;}
+.day-totals .lbl{font-size:10px; color:var(--ink-2); margin-top:2px;}
+.sale-line{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; padding:8px 0; border-bottom:1px solid var(--line-soft);}
+.sale-line:last-child{border-bottom:none;}
+.sale-line .p{color:var(--ink-2); font-family:'JetBrains Mono'; font-size:11.5px;}
+
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--bg-3); border:1px solid var(--line); color:var(--ink-0); font-size:13px; padding:11px 18px; border-radius:999px; opacity:0; pointer-events:none; transition:all .3s var(--ease); z-index:200; text-align:center; max-width:80vw;}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.loading-screen{position:fixed; inset:0; background:var(--bg-0); display:flex; align-items:center; justify-content:center; z-index:300; color:var(--ink-2); font-size:13px; flex-direction:column; gap:10px;}
+.loading-screen.hide{display:none;}
+.spin{width:22px; height:22px; border-radius:50%; border:2.5px solid var(--line); border-top-color:var(--orange); animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty-note{color:var(--ink-3); font-size:13px; padding:10px 2px;}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen"><div class="spin"></div><span>Carregando estoque…</span></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">CT</div>
+      <div class="brand-text"><b>Central Tech</b><span><span class="sync-dot" id="syncDot"></span><span id="syncLabel">sincronizando…</span></span></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="addProductBtn">+ Produto</button>
+      <button class="btn ghost" id="salesTodayBtn">Vendas de hoje</button>
+      <button class="btn primary" id="refreshBtn">Sincronizar agora</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="hero">
+    <span class="eyebrow">Loja · estoque e vendas</span>
+    <h1>Controle o estoque, registre vendas e acompanhe o lucro do dia.</h1>
+    <p>Informe manualmente a "Qtd. em estoque" de cada produto (isso não conta como venda). A cada venda, clique em "Vender": o estoque diminui e a "Vendida" aumenta na mesma proporção — o faturamento e o lucro do dia são calculados na hora. Os dados ficam salvos na nuvem e sincronizam entre os dispositivos que abrirem este mesmo link.</p>
+
+    <div class="stat-grid">
+      <div class="stat-card st-total"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Produtos cadastrados</div></div>
+      <div class="stat-card st-units"><div class="stat-num" id="statUnits">0</div><div class="stat-label">Itens vendidos hoje</div></div>
+      <div class="stat-card st-rev"><div class="stat-num" id="statRev">R$ 0</div><div class="stat-label">Faturamento hoje</div></div>
+      <div class="stat-card st-profit"><div class="stat-num" id="statProfit">R$ 0</div><div class="stat-label">Lucro hoje</div></div>
+      <div class="stat-card st-out"><div class="stat-num" id="statOut">0</div><div class="stat-label">Sem estoque</div></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Buscar produto ou modelo…">
+    </div>
+    <div class="select-wrap">
+      <select id="catSelect"><option value="all">Todas as categorias</option></select>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="filter-chip active" data-filter="all">Todos</div>
+    <div class="filter-chip" data-filter="out">Sem estoque</div>
+    <div class="filter-chip" data-filter="low">Estoque baixo</div>
+  </div>
+
+  <div id="sectionsRoot"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal: vendas de hoje -->
+<div class="modal-overlay" id="salesModal">
+  <div class="modal">
+    <h3>Vendas do dia</h3>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Data</label>
+        <input type="date" id="salesDateInput">
+      </div>
+    </div>
+    <div class="day-totals" id="dayTotals"></div>
+    <div id="salesList"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="salesModal">Fechar</button>
+      <button class="btn primary" id="copySalesBtn">Copiar resumo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: adicionar produto -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h3>Adicionar produto</h3>
+    <div class="modal-row">
+      <div class="modal-field" style="flex:1 1 100%;">
+        <label>Nome do produto</label>
+        <input type="text" id="newName" placeholder="Ex: Capinha iPhone 17 transparente">
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Categoria</label>
+        <select id="newCategory"></select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Preço de custo (R$)</label>
+        <input type="number" min="0" step="0.01" id="newCost" value="0">
+      </div>
+      <div class="modal-field">
+        <label>Preço de venda (R$)</label>
+        <input type="number" min="0" step="0.01" id="newPrice" value="0">
+      </div>
+      <div class="modal-field">
+        <label>Estoque inicial</label>
+        <input type="number" min="0" id="newStock" value="0">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="addModal">Cancelar</button>
+      <button class="btn primary" id="saveNewBtn">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CATÁLOGO BASE (mesmos itens do checklist de inauguração)
+   ============================================================ */
+const CATALOG = [
+{ id:"samsung", name:"Capinhas · Samsung (A / S / M)", items:[
+  "A02 / A02s","A05 / A05s","A06","A07","A10s","A11","A12","A13","A14","A15","A16","A17",
+  "A20 / A30 / A50","A21 / A21s","A22 4G","A23","A25","A26","A31","A32 4G","A34","A35","A36",
+  "A51","A52","A53","A54","A55","A56","A57","S20 FE","S21 FE","S23 FE","S24 FE","M23","M34","M35"
+]},
+{ id:"motog", name:"Capinhas · Motorola G", items:[
+  "G04 / G04s","G05","G06","G9 / G9 Play","G10 / G20 / G30","G13 / G23","G14","G15","G22","G24",
+  "G31","G32","G34","G35","G42","G45","G51","G52","G53","G54","G55","G56","G67","G71","G72","G73",
+  "G75","G77","G82","G84","G86"
+]},
+{ id:"motoe", name:"Capinhas · Motorola E / Edge", items:[
+  "E6s","E7 / E7 Plus","E13","E20","E22","E32","Edge 20","Edge 20 Lite","Edge 20 Pro","Edge 30 Neo","Edge 50 Neo"
+]},
+{ id:"iphone", name:"Capinhas · iPhone", items:[
+  "iPhone 7 (branco)","iPhone 7 (preto)","iPhone 7 Plus (branco)","iPhone 7 Plus (preto)","iPhone X / XS",
+  "iPhone XR / 11","iPhone XS Max / 11 Pro Max","iPhone 12 / 12 Pro","iPhone 12 Mini","iPhone 12 Pro Max",
+  "iPhone 13 / 13 Pro","iPhone 13 Pro Max","iPhone 14","iPhone 14 Pro","iPhone 14 Pro Max","iPhone 15",
+  "iPhone 15 Pro","iPhone 15 Plus","iPhone 15 Pro Max","iPhone 16","iPhone 16 Pro","iPhone 16 Plus",
+  "iPhone 16 Pro Max","iPhone 17","iPhone 17 Pro","iPhone 17 Pro Max","iPhone 17 Air","iPhone 16e"
+]},
+{ id:"redmi", name:"Capinhas · Redmi", items:[
+  "Redmi A3","Redmi A5","Redmi 9","Redmi 9A","Redmi 9C","Redmi 10","Redmi 10A","Redmi 10C","Redmi 12C",
+  "Redmi 13C","Redmi 14C","Redmi 15","Redmi 15C"
+]},
+{ id:"note", name:"Capinhas · Redmi Note", items:[
+  "Note 7","Note 8","Note 8 Pro","Note 9","Note 9S / 9 Pro","Note 10 / 10s","Note 10 Pro","Note 11",
+  "Note 11 Pro","Note 12","Note 12s","Note 12 Pro","Note 13","Note 13 Pro","Note 14","Note 15 PRO"
+]},
+{ id:"poco", name:"Capinhas · Poco", items:[
+  "Poco X3 / X3 Pro","Poco X4 / X4 Pro","Poco X5","Poco X5 Pro","Poco X6","Poco X6 Pro","Poco X7",
+  "Poco X7 Pro","Poco M4","Poco M4 Pro","Poco M5","Poco M5 Pro"
+]},
+{ id:"cabosav", name:"Cabos e adaptadores de vídeo/áudio", items:[
+  "Cabo HDMI 1.5 m","Cabo HDMI 3 m","Cabo HDMI 5 m (2.1 4K/120Hz)","Cabo DisplayPort 1.8 m",
+  "Cabo de áudio P2 macho-macho 1.5 m","Extensão P2 macho-fêmea","Cabo óptico Toslink",
+  "Adaptador HDMI/VGA (com áudio)","Adaptador USB-C para HDMI","Adaptador USB-C para VGA",
+  "Chaveador HDMI (switch 3x1)","Chaveador HDMI (switch 5x1)","Cabo de força padrão (3 pinos)",
+  "Cabo figura 8","Régua / filtro de linha 4 a 6 tomadas"
+]},
+{ id:"cabosdados", name:"Cabos de dados e carregamento", items:[
+  "Cabo USB-A para Micro USB - 1 m","Cabo USB-A para Micro USB - 2 m","Cabo USB-A para USB-C - 1 m",
+  "Cabo USB-A para USB-C - 2 m","Cabo USB-C para USB-C 60 W - 1 m","Cabo USB-C para USB-C 60 W - 2 m",
+  "Cabo Lightning - 1 m","Cabo OTG (USB-C)","Cabo OTG (Micro USB)","Cabo de rede Cat6 - 1 m",
+  "Cabo de rede Cat6 - 2 m","Cabo de rede Cat6 - 5 m","Cabo de rede Cat6 - 10 m","Leitor de cartão USB (SD/microSD)"
+]},
+{ id:"alimentacao", name:"Alimentação e carregadores", items:[
+  "Carregador USB de parede 20 W","Carregador USB de parede 65 W (2 portas)","Carregador veicular USB",
+  "Fonte AC Nintendo Switch (15V)","Cabo USB-C PD Switch","Power bank 5000 mAh","Power bank 10000 mAh",
+  "Pilha CR2032 avulsa","Pilhas AA recarregáveis + carregador","Carregador sem fio Qi"
+]},
+{ id:"adaptadores", name:"Adaptadores e hubs", items:[
+  "Adaptador USB-C para P2","Adaptador Lightning para P2","Adaptador Lightning carga+áudio simultâneo",
+  "Hub USB 3.0 - 4 portas","Adaptador Wi-Fi USB dual band","Adaptador USB para áudio P2","Adaptador Bluetooth USB"
+]},
+{ id:"perifericos", name:"Periféricos para PC e notebook", items:[
+  "Mouse USB com fio básico","Mouse USB com fio gamer","Mouse sem fio 2.4 GHz","Teclado USB ABNT2",
+  "Combo mouse + teclado sem fio","Mousepad normal","Mousepad estendido gamer","Webcam HD 720p",
+  "Suporte articulado / cooler pad notebook"
+]},
+{ id:"audio", name:"Áudio e headsets", items:[
+  "Headset gamer com microfone (P2)","Headset gamer com microfone (USB)","Fone intra-auricular básico P2",
+  "Adaptador splitter P2","Caixa de som estéreo pequena USB/P2"
+]},
+{ id:"outros", name:"Outros", items:[
+  "Suporte veicular - moto","Suporte veicular - carro","Capa à prova d'água","Suporte de mesa"
+]}
+];
+
+function buildDefaultProducts(){
+  const list = [];
+  CATALOG.forEach(cat=>{
+    cat.items.forEach(name=>{
+      // estoque = quantidade disponível (informada manualmente); sold = quantidade vendida (só muda com uma venda)
+      list.push({ id: cat.id+'::'+name, name, category: cat.id, cost:0, price:0, stock:0, sold:0 });
+    });
+  });
+  return list;
+}
+function categoryName(id){
+  const c = CATALOG.find(c=>c.id===id);
+  if(c) return c.name;
+  if(id==='custom') return 'Adicionados por você';
+  return id;
+}
+
+/* ============================================================
+   ESTADO + SINCRONIZAÇÃO (window.storage, dado compartilhado)
+   ============================================================ */
+const STORAGE_KEY = 'central-tech-estoque-vendas-v1';
+let STATE = { products: [], sales: [] };
+let currentFilter = 'all';
+let currentSearch = '';
+let currentCategory = 'all';
+let lastSavedJSON = '';
+
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtBRL(n){ return (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+
+/* ------------------------------------------------------------
+   Camada de armazenamento: usa a nuvem (sincroniza entre
+   dispositivos) quando disponível; se a página for aberta fora
+   do Claude (arquivo salvo, outro site etc.) essa função não
+   existe, então cai automaticamente para o navegador local, sem
+   ficar tentando salvar em algo que não existe.
+   ------------------------------------------------------------ */
+const hasCloudStorage = !!(window.storage && typeof window.storage.get === 'function' && typeof window.storage.set === 'function');
+
+async function storageGet(key){
+  if(hasCloudStorage){
+    try{ return await window.storage.get(key, true); }
+    catch(e){ return null; } // chave ainda não existe
+  }
+  const v = localStorage.getItem(key);
+  return v ? { value: v } : null;
+}
+async function storageSet(key, value){
+  if(hasCloudStorage){
+    const res = await window.storage.set(key, value, true);
+    if(!res) throw new Error('Falha ao salvar na nuvem');
+    return res;
+  }
+  localStorage.setItem(key, value);
+  return { value };
+}
+
+function setSyncStatus(status){
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  dot.className = 'sync-dot' + (status==='syncing' ? ' syncing' : status==='err' ? ' err' : '');
+  const scope = hasCloudStorage ? '' : ' (somente neste navegador)';
+  if(status==='syncing') label.textContent = 'sincronizando…';
+  else if(status==='err') label.textContent = 'falha ao sincronizar' + scope;
+  else label.textContent = 'salvo às ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + scope;
+}
+
+async function loadState(showSpinner){
+  if(showSpinner) setSyncStatus('syncing');
+  try{
+    const res = await storageGet(STORAGE_KEY);
+    if(res && res.value){
+      STATE = JSON.parse(res.value);
+      // migração: garante que produtos salvos antes de existir o campo "sold" continuem consistentes
+      STATE.products = (STATE.products||[]).map(p=>({
+        ...p,
+        stock: Number.isFinite(p.stock) ? p.stock : 0,
+        sold: Number.isFinite(p.sold) ? p.sold : 0
+      }));
+      STATE.sales = STATE.sales || [];
+    } else {
+      STATE = { products: buildDefaultProducts(), sales: [] };
+      await storageSet(STORAGE_KEY, JSON.stringify(STATE));
+    }
+    lastSavedJSON = JSON.stringify(STATE);
+    setSyncStatus('ok');
+  }catch(e){
+    if(!STATE.products.length) STATE = { products: buildDefaultProducts(), sales: [] };
+    setSyncStatus('err');
+  }
+}
+
+async function saveState(){
+  setSyncStatus('syncing');
+  try{
+    await storageSet(STORAGE_KEY, JSON.stringify(STATE));
+    lastSavedJSON = JSON.stringify(STATE);
+    setSyncStatus('ok');
+  }catch(e){
+    setSyncStatus('err');
+    showToast(hasCloudStorage
+      ? 'Não foi possível salvar na nuvem agora. Vou tentar de novo — evite fechar a página.'
+      : 'Não foi possível salvar neste navegador (verifique se o modo privado/anônimo está desativado).');
+  }
+}
+
+// puxa dados de outros dispositivos periodicamente, sem atrapalhar quem está digitando
+async function backgroundRefresh(){
+  if(!hasCloudStorage) return; // sem nuvem não há o que sincronizar entre dispositivos
+  const active = document.activeElement;
+  const isEditing = active && (active.classList.contains('num-input') || active.tagName==='INPUT' || active.tagName==='SELECT');
+  if(isEditing) return;
+  try{
+    const res = await storageGet(STORAGE_KEY);
+    if(res && res.value && res.value !== lastSavedJSON){
+      STATE = JSON.parse(res.value);
+      lastSavedJSON = res.value;
+      render();
+      setSyncStatus('ok');
+    }
+  }catch(e){ /* silencioso */ }
+}
+setInterval(backgroundRefresh, 20000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) backgroundRefresh(); });
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2600);
+}
+
+/* ============================================================
+   AÇÕES
+   ============================================================ */
+async function sellProduct(id){
+  const p = STATE.products.find(x=>x.id===id);
+  if(!p) return;
+  if(p.stock <= 0){ showToast('Sem estoque de "' + p.name + '".'); return; }
+  const qtyInput = document.querySelector('.sell-wrap[data-row="'+CSS.escape(id)+'"] .qty-input');
+  let qty = qtyInput ? parseInt(qtyInput.value,10) : 1;
+  if(isNaN(qty) || qty < 1) qty = 1;
+  qty = Math.min(qty, p.stock);
+  p.stock -= qty;
+  p.sold = (p.sold||0) + qty;
+  STATE.sales.push({
+    id: genId(), productId: p.id, name: p.name, category: p.category,
+    qty, cost: p.cost, price: p.price, profit: (p.price - p.cost) * qty,
+    ts: new Date().toISOString()
+  });
+  await saveState();
+  render();
+  showToast('Venda registrada: ' + qty + 'x ' + p.name);
+}
+
+async function updateProductField(id, field, value){
+  const p = STATE.products.find(x=>x.id===id);
+  if(!p) return;
+  // "stock" aqui é sempre um ajuste manual de quantidade disponível — nunca mexe em "sold" nem gera venda
+  p[field] = value;
+  await saveState();
+}
+
+async function deleteProduct(id){
+  const p = STATE.products.find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm('Remover "' + p.name + '" do catálogo? O histórico de vendas já feitas não será apagado.')) return;
+  STATE.products = STATE.products.filter(x=>x.id!==id);
+  await saveState();
+  render();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const root = document.getElementById('sectionsRoot');
+const catSelect = document.getElementById('catSelect');
+
+function populateCategorySelects(){
+  const cats = [...new Set(STATE.products.map(p=>p.category))];
+  catSelect.innerHTML = '<option value="all">Todas as categorias</option>' +
+    cats.map(c=>`<option value="${c}">${categoryName(c)}</option>`).join('');
+  catSelect.value = currentCategory;
+
+  const newCat = document.getElementById('newCategory');
+  const allCats = [...new Set([...CATALOG.map(c=>c.id), ...cats, 'custom'])];
+  newCat.innerHTML = allCats.map(c=>`<option value="${c}">${categoryName(c)}</option>`).join('');
+}
+
+function render(){
+  populateCategorySelects();
+  root.innerHTML = '';
+
+  const cats = [...new Set(STATE.products.map(p=>p.category))]
+    .sort((a,b)=>{
+      const ai = CATALOG.findIndex(c=>c.id===a), bi = CATALOG.findIndex(c=>c.id===b);
+      return (ai<0?999:ai) - (bi<0?999:bi);
+    });
+
+  cats.forEach(catId=>{
+    if(currentCategory !== 'all' && catId !== currentCategory) return;
+
+    let items = STATE.products.filter(p=>p.category===catId);
+    if(currentSearch) items = items.filter(p=>p.name.toLowerCase().includes(currentSearch));
+    if(currentFilter === 'out') items = items.filter(p=>p.stock<=0);
+    if(currentFilter === 'low') items = items.filter(p=>p.stock>0 && p.stock<=2);
+    if(items.length === 0) return;
+
+    const section = document.createElement('div');
+    section.className = 'section';
+
+    const rowsHTML = items.map(p=>{
+      const status = p.stock<=0 ? 'out' : (p.stock<=2 ? 'low' : 'ok');
+      const rowClass = status==='out' ? 'stock-out' : (status==='low' ? 'stock-low' : '');
+      const statusLabel = status==='out' ? 'Sem estoque' : (status==='low' ? 'Estoque baixo' : 'Em estoque');
+      const margin = p.price - p.cost;
+      const marginClass = margin > 0 ? 'pos' : (margin < 0 ? 'neg' : '');
+      return `
+        <div class="item-row ${rowClass}" data-row="${p.id}">
+          <div class="item-name">${p.name}</div>
+          <div class="field">
+            <label>Custo</label>
+            <input type="number" min="0" step="0.01" class="num-input" data-field="cost" data-id="${p.id}" value="${p.cost}">
+          </div>
+          <div class="field">
+            <label>Venda</label>
+            <input type="number" min="0" step="0.01" class="num-input" data-field="price" data-id="${p.id}" value="${p.price}">
+          </div>
+          <div class="field">
+            <label>Qtd. em estoque</label>
+            <input type="number" min="0" step="1" inputmode="numeric" class="num-input stock" data-field="stock" data-id="${p.id}" value="${p.stock}">
+          </div>
+          <div class="field">
+            <label>Vendida</label>
+            <span class="num-input stock sold-display" title="Quantidade vendida (soma automaticamente a cada venda)">${p.sold||0}</span>
+          </div>
+          <span class="margin-badge ${marginClass}">lucro un. ${fmtBRL(margin)}</span>
+          <span class="stock-tag ${status}">${statusLabel}</span>
+          <div class="sell-wrap" data-row="${p.id}">
+            <div class="field">
+              <label>Qtd</label>
+              <input type="number" min="1" value="1" class="num-input stock qty-input">
+            </div>
+            <button class="sell-btn" data-sell="${p.id}" ${p.stock<=0?'disabled':''}>Vender</button>
+          </div>
+          <button class="del-btn" data-del="${p.id}" title="Remover produto">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+          </button>
+        </div>`;
+    }).join('');
+
+    section.innerHTML = `
+      <div class="section-head">
+        <h2>${categoryName(catId)}</h2>
+        <span class="section-count">${items.length} produto${items.length===1?'':'s'}</span>
+      </div>
+      <div class="item-grid">${rowsHTML}</div>
+    `;
+    root.appendChild(section);
+  });
+
+  if(root.innerHTML.trim()===''){
+    root.innerHTML = '<div class="empty-note">Nenhum produto corresponde ao filtro/busca.</div>';
+  }
+
+  attachRowEvents();
+  renderStats();
+}
+
+function attachRowEvents(){
+  document.querySelectorAll('.num-input[data-field]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const id = inp.dataset.id;
+      const field = inp.dataset.field;
+      const raw = inp.value.trim();
+      const p = STATE.products.find(x=>x.id===id);
+      if(raw === ''){ if(p) inp.value = p[field]; return; } // campo vazio: não sobrescreve o valor salvo
+      let val = field === 'stock' ? parseInt(raw,10) : parseFloat(raw);
+      if(isNaN(val) || val < 0){ if(p) inp.value = p[field]; showToast('Digite um número válido.'); return; }
+      await updateProductField(id, field, val);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-sell]').forEach(btn=>{
+    btn.addEventListener('click', ()=> sellProduct(btn.dataset.sell));
+  });
+  document.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=> deleteProduct(btn.dataset.del));
+  });
+}
+
+function renderStats(){
+  const today = todayStr();
+  const todaySales = STATE.sales.filter(s=>s.ts.slice(0,10)===today);
+  const unitsToday = todaySales.reduce((a,s)=>a+s.qty,0);
+  const revToday = todaySales.reduce((a,s)=>a+s.price*s.qty,0);
+  const costToday = todaySales.reduce((a,s)=>a+s.cost*s.qty,0);
+  const profitToday = revToday - costToday;
+  const outCount = STATE.products.filter(p=>p.stock<=0).length;
+
+  document.getElementById('statTotal').textContent = STATE.products.length;
+  document.getElementById('statUnits').textContent = unitsToday;
+  document.getElementById('statRev').textContent = fmtBRL(revToday);
+  document.getElementById('statProfit').textContent = fmtBRL(profitToday);
+  document.getElementById('statOut').textContent = outCount;
+}
+
+/* ============================================================
+   FILTROS / BUSCA
+   ============================================================ */
+document.querySelectorAll('.filter-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilter = chip.dataset.filter;
+    render();
+  });
+});
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  currentSearch = e.target.value.trim().toLowerCase();
+  render();
+});
+catSelect.addEventListener('change', ()=>{ currentCategory = catSelect.value; render(); });
+
+/* ============================================================
+   MODAIS
+   ============================================================ */
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=>document.getElementById(btn.dataset.close).classList.remove('open'));
+});
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  ov.addEventListener('click', (e)=>{ if(e.target===ov) ov.classList.remove('open'); });
+});
+
+document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+  await loadState(true);
+  render();
+  showToast('Estoque atualizado.');
+});
+
+/* --- vendas de hoje --- */
+const salesDateInput = document.getElementById('salesDateInput');
+salesDateInput.value = todayStr();
+salesDateInput.addEventListener('change', renderSalesModal);
+
+function renderSalesModal(){
+  const date = salesDateInput.value || todayStr();
+  const dayList = STATE.sales.filter(s=>s.ts.slice(0,10)===date).sort((a,b)=>b.ts.localeCompare(a.ts));
+  const units = dayList.reduce((a,s)=>a+s.qty,0);
+  const rev = dayList.reduce((a,s)=>a+s.price*s.qty,0);
+  const cost = dayList.reduce((a,s)=>a+s.cost*s.qty,0);
+  const profit = rev - cost;
+
+  document.getElementById('dayTotals').innerHTML = `
+    <div><div class="num">${units}</div><div class="lbl">Itens vendidos</div></div>
+    <div><div class="num">${fmtBRL(rev)}</div><div class="lbl">Faturamento</div></div>
+    <div><div class="num">${fmtBRL(cost)}</div><div class="lbl">Custo</div></div>
+    <div><div class="num" style="color:var(--good)">${fmtBRL(profit)}</div><div class="lbl">Lucro</div></div>
+  `;
+
+  const listEl = document.getElementById('salesList');
+  if(dayList.length===0){
+    listEl.innerHTML = '<div class="empty-note">Nenhuma venda registrada nesta data.</div>';
+  } else {
+    listEl.innerHTML = dayList.map(s=>`
+      <div class="sale-line">
+        <span>${s.qty}x ${s.name}</span>
+        <span class="p">${new Date(s.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · lucro ${fmtBRL(s.profit)}</span>
+      </div>`).join('');
+  }
+
+  const summary = `CENTRAL TECH — VENDAS DE ${date.split('-').reverse().join('/')}\n\n` +
+    (dayList.length ? dayList.map(s=>`  ${s.qty}x ${s.name} — ${fmtBRL(s.price*s.qty)} (lucro ${fmtBRL(s.profit)})`).join('\n') : '  Nenhuma venda registrada.') +
+    `\n\nTotal: ${units} itens · Faturamento ${fmtBRL(rev)} · Custo ${fmtBRL(cost)} · Lucro ${fmtBRL(profit)}`;
+  document.getElementById('copySalesBtn').dataset.text = summary;
+}
+
+document.getElementById('salesTodayBtn').addEventListener('click', ()=>{
+  salesDateInput.value = todayStr();
+  renderSalesModal();
+  document.getElementById('salesModal').classList.add('open');
+});
+document.getElementById('copySalesBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('copySalesBtn').dataset.text || '';
+  try{ await navigator.clipboard.writeText(text); }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  }
+  showToast('Resumo copiado.');
+});
+
+/* --- adicionar produto --- */
+document.getElementById('addProductBtn').addEventListener('click', ()=>{
+  document.getElementById('newName').value = '';
+  document.getElementById('newCost').value = 0;
+  document.getElementById('newPrice').value = 0;
+  document.getElementById('newStock').value = 0;
+  populateCategorySelects();
+  document.getElementById('addModal').classList.add('open');
+});
+document.getElementById('saveNewBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newName').value.trim();
+  if(!name){ showToast('Digite o nome do produto.'); return; }
+  const category = document.getElementById('newCategory').value || 'custom';
+  const cost = parseFloat(document.getElementById('newCost').value) || 0;
+  const price = parseFloat(document.getElementById('newPrice').value) || 0;
+  const stock = parseInt(document.getElementById('newStock').value,10) || 0;
+  STATE.products.push({ id: 'custom::' + genId(), name, category, cost, price, stock, sold:0 });
+  await saveState();
+  render();
+  document.getElementById('addModal').classList.remove('open');
+  showToast('Produto adicionado.');
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(async function init(){
+  await loadState(true);
+  render();
+  document.getElementById('loadingScreen').classList.add('hide');
+})();
+</script>
+</body>
+</html>
